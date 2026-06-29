@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Sunny Studio Clock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Sunny's Studio</p>
+        <h1 id="page-title">用心工作・好好生活</h1>
+      </div>
+      <div class="cloud-pill" id="cloud-status">
+        <span></span>
+        <b>Local</b>
+      </div>
+    </header>
+
+    <main>
+      <section class="page page-active" id="page-clock">
+        <div class="date-card">
+          <p id="today-text">----</p>
+          <strong id="now-time">--:--:--</strong>
+        </div>
+
+        <div class="clock-stage">
+          <div class="soft-ring"></div>
+          <button class="clock-button" id="clock-button" type="button">
+            <span class="clock-main" id="clock-main">CLOCK IN</span>
+            <span class="clock-sub" id="clock-sub">開始工作</span>
+            <span class="clock-timer" id="clock-timer">00:00:00</span>
+          </button>
+        </div>
+
+        <div class="status-card" id="status-card">
+          <div>
+            <span class="status-dot"></span>
+            <p id="status-text">今日尚未打卡</p>
+          </div>
+          <small id="status-detail">時薪 $200，自動計算今日薪資。</small>
+        </div>
+      </section>
+
+      <section class="page" id="page-records">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Records</p>
+            <h2>打卡紀錄</h2>
+          </div>
+          <button class="ghost-btn" id="add-manual-btn" type="button">新增</button>
+        </div>
+        <div class="pending-summary">
+          <span>待領薪資</span>
+          <strong id="pending-total">$0</strong>
+        </div>
+        <div id="record-list" class="record-list"></div>
+      </section>
+
+      <section class="page" id="page-stats">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Overview</p>
+            <h2>本月統計</h2>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card large">
+            <span>本月工時</span>
+            <strong id="stat-hours">0h</strong>
+          </article>
+          <article class="stat-card">
+            <span>本月薪資</span>
+            <strong id="stat-total">$0</strong>
+          </article>
+          <article class="stat-card">
+            <span>已領</span>
+            <strong id="stat-paid">$0</strong>
+          </article>
+          <article class="stat-card accent">
+            <span>待領</span>
+            <strong id="stat-unpaid">$0</strong>
+          </article>
+          <article class="stat-card">
+            <span>打卡次數</span>
+            <strong id="stat-count">0</strong>
+          </article>
+        </div>
+
+        <div class="settings-card">
+          <h3>雲端同步</h3>
+          <p>先填入 app.js 裡面的 Supabase URL / anon key，並建立資料表。今天也可以先使用本機版。</p>
+          <button class="primary-light-btn" id="sync-now-btn" type="button">手動同步</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-page="clock" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>打卡</span>
+      </button>
+      <button class="nav-item" data-page="records" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M8 4h7l3 3v13H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M15 4v4h4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 11h6M9 15h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>紀錄</span>
+      </button>
+      <button class="nav-item" data-page="stats" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 19V9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 19V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 19v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>統計</span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="sheet hidden" id="settle-sheet" aria-hidden="true">
+    <div class="sheet-panel">
+      <button class="sheet-close" data-close-sheet type="button">×</button>
+      <p class="eyebrow">Daily Settlement</p>
+      <h2>今日結算</h2>
+      <div class="settle-summary">
+        <span id="settle-time">--:-- → --:--</span>
+        <strong id="settle-base">$0</strong>
+        <small id="settle-hours">0h</small>
+      </div>
+      <label>午餐扣款</label>
+      <input id="lunch-input" inputmode="numeric" type="number" placeholder="例如 100" />
+      <label>代墊加項</label>
+      <input id="reimburse-input" inputmode="numeric" type="number" placeholder="例如 250" />
+      <label>備註</label>
+      <input id="note-input" type="text" placeholder="例如：代買花材" />
+      <div class="final-row">
+        <span>今日實領</span>
+        <strong id="final-pay">$0</strong>
+      </div>
+      <button class="primary-btn" id="save-settle-btn" type="button">儲存紀錄</button>
+    </div>
+  </div>
+
+  <div class="sheet hidden" id="edit-sheet" aria-hidden="true">
+    <div class="sheet-panel">
+      <button class="sheet-close" data-close-edit type="button">×</button>
+      <p class="eyebrow">Edit Record</p>
+      <h2>編輯紀錄</h2>
+      <input type="hidden" id="edit-id" />
+      <label>上班時間</label>
+      <input id="edit-in" type="datetime-local" />
+      <label>下班時間</label>
+      <input id="edit-out" type="datetime-local" />
+      <label>午餐扣款</label>
+      <input id="edit-lunch" inputmode="numeric" type="number" />
+      <label>代墊加項</label>
+      <input id="edit-reimburse" inputmode="numeric" type="number" />
+      <label>備註</label>
+      <input id="edit-note" type="text" />
+      <button class="primary-btn" id="save-edit-btn" type="button">更新紀錄</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
