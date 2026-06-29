@@ -96,22 +96,85 @@
       <input class="note-input wide" id="dailyNoteInput" type="text" placeholder="備註（選填）" />
 
       <button class="save-btn" id="saveBtn" type="button">✓　完成，儲存紀錄</button>
-      <p class="safe-note">♧ 打卡紀錄將自動保存於本機</p>
+      <p class="safe-note" id="syncNote">♧ 打卡紀錄將自動保存於本機</p>
     </div>
   </section>
 
   <section class="simple-panel" id="recordsPanel" aria-hidden="true">
     <button class="panel-close" type="button" data-close-panel>×</button>
     <h2>Records</h2>
+    <div id="monthSummary" class="month-summary"></div>
     <div id="recordsList" class="records-list"></div>
   </section>
 
   <section class="simple-panel" id="settingsPanel" aria-hidden="true">
     <button class="panel-close" type="button" data-close-panel>×</button>
     <h2>Settings</h2>
-    <p class="setting-text">目前時薪固定為 <b>$200 / 小時</b>。下一版可以再加入雲端同步、老師查看頁、月結統計。</p>
+    <p class="setting-text">目前時薪固定為 <b>$200 / 小時</b>。</p>
+    <div class="teacher-lock-card">
+      <h3>雲端同步狀態</h3>
+      <p id="cloudStatusText">尚未連接雲端。若要讓老師同步查看，請先在 app.js 填入 Supabase URL 與 anon key。</p>
+      <button class="save-btn compact" id="manualSyncBtn" type="button">手動同步一次</button>
+    </div>
+    <div class="teacher-lock-card">
+      <h3>老師發薪確認密碼</h3>
+      <p>設定後，紀錄裡的「核實發薪」需要輸入這組密碼，避免誤按。</p>
+      <input id="teacherPasswordInput" type="password" autocomplete="new-password" placeholder="設定或更改老師密碼" />
+      <input id="teacherPasswordConfirm" type="password" autocomplete="new-password" placeholder="再次輸入密碼" />
+      <button class="save-btn compact" id="saveTeacherPasswordBtn" type="button">儲存老師密碼</button>
+      <button class="delete-danger light" id="clearTeacherPasswordBtn" type="button">清除密碼</button>
+      <small id="passwordStatusText">尚未設定密碼</small>
+    </div>
   </section>
 
+  <section class="simple-panel edit-panel" id="editPanel" aria-hidden="true">
+    <button class="panel-close" type="button" data-close-panel>×</button>
+    <h2>Edit Record</h2>
+    <div class="edit-form">
+      <input type="hidden" id="editId" />
+      <label>
+        <span>日期</span>
+        <input id="editDate" type="text" placeholder="2026 / 06 / 29　星期一" />
+      </label>
+      <div class="edit-grid">
+        <label>
+          <span>開始</span>
+          <input id="editStart" type="time" />
+        </label>
+        <label>
+          <span>結束</span>
+          <input id="editEnd" type="time" />
+        </label>
+      </div>
+      <label>
+        <span>工時（小時）</span>
+        <input id="editHours" type="number" min="0" step="0.1" inputmode="decimal" />
+      </label>
+      <div class="edit-grid">
+        <label>
+          <span>午餐代扣</span>
+          <input id="editLunch" type="number" min="0" inputmode="numeric" placeholder="0" />
+        </label>
+        <label>
+          <span>代墊金額</span>
+          <input id="editReimburse" type="number" min="0" inputmode="numeric" placeholder="0" />
+        </label>
+      </div>
+      <label>
+        <span>備註</span>
+        <input id="editNote" type="text" placeholder="備註（選填）" />
+      </label>
+      <div class="edit-total">
+        <span>修改後實領</span>
+        <strong id="editFinalPay">$ 0</strong>
+      </div>
+      <button class="save-btn" id="updateRecordBtn" type="button">✓　完成修改</button>
+      <button class="delete-danger" id="deleteRecordBtn" type="button">刪除此筆紀錄</button>
+    </div>
+  </section>
+
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
