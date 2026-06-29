@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sunny's Studio Clock In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>Sunny's Studio</h1>
+        <p>用心工作・好好生活</p>
+      </div>
+      <div class="status-pill"><span></span><b id="statusText">Ready</b></div>
+    </header>
+
+    <main class="home-view" id="homeView">
+      <section class="time-block">
+        <div id="dateText">---- / -- / --　星期-</div>
+        <strong id="clockText">--:--:--</strong>
+      </section>
+
+      <section class="clock-area">
+        <div class="gold-dot dot-1"></div>
+        <div class="gold-dot dot-2"></div>
+        <div class="gold-dot dot-3"></div>
+        <div class="soft-ring"></div>
+        <button class="clock-button" id="clockButton" type="button">
+          <span class="sun-mark">☼</span>
+          <span class="button-en" id="buttonEn">CLOCK IN</span>
+          <span class="button-zh" id="buttonZh">開始工作</span>
+          <span class="work-timer" id="workTimer">00:00:00</span>
+        </button>
+      </section>
+
+      <p class="today-note" id="todayNote">✦ 今日尚未打卡</p>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="active" type="button"><span>◷</span>打卡</button>
+      <button type="button" id="recordsBtn"><span>▱</span>紀錄</button>
+      <button type="button" id="settingsBtn"><span>♙</span>設定</button>
+    </nav>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <section class="settlement-sheet" id="settlementSheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-scroll">
+      <h2>Daily Settlement</h2>
+      <div class="leaf-divider">— — —</div>
+
+      <div class="period-card">
+        <div class="period-icon">◷</div>
+        <div>
+          <small>工作期間</small>
+          <p id="periodText">--:-- – --:--</p>
+        </div>
+        <strong><span id="hoursText">0.0</span> 小時</strong>
+      </div>
+
+      <div class="formula-card">
+        <div><small>時薪</small><p>$ 200</p></div>
+        <em>×</em>
+        <div><small>工時</small><p><span id="formulaHours">0.0</span> 小時</p></div>
+        <em>=</em>
+        <div><small>基本薪資</small><p id="basePayText">$ 0</p></div>
+      </div>
+
+      <div class="adjust-card">
+        <h3>薪資調整項目</h3>
+        <label class="adjust-row">
+          <span class="minus">−</span>
+          <b>午餐代扣金額</b>
+          <input id="lunchInput" inputmode="numeric" type="number" min="0" placeholder="$ 0" />
+        </label>
+        <label class="adjust-row">
+          <span class="plus">＋</span>
+          <b>代墊金額</b>
+          <input id="reimburseInput" inputmode="numeric" type="number" min="0" placeholder="$ 0" />
+        </label>
+        <input class="note-input" id="noteInput" type="text" placeholder="備註（選填）" />
+      </div>
+
+      <div class="total-card">
+        <span>今日實領金額</span>
+        <strong id="finalPayText">$ 0</strong>
+      </div>
+
+      <input class="note-input wide" id="dailyNoteInput" type="text" placeholder="備註（選填）" />
+
+      <button class="save-btn" id="saveBtn" type="button">✓　完成，儲存紀錄</button>
+      <p class="safe-note" id="syncNote">♧ 打卡紀錄將自動保存於本機</p>
+    </div>
+  </section>
+
+  <section class="simple-panel" id="recordsPanel" aria-hidden="true">
+    <button class="panel-close" type="button" data-close-panel>×</button>
+    <h2>Records</h2>
+    <div id="monthSummary" class="month-summary"></div>
+    <div id="recordsList" class="records-list"></div>
+  </section>
+
+  <section class="simple-panel" id="settingsPanel" aria-hidden="true">
+    <button class="panel-close" type="button" data-close-panel>×</button>
+    <h2>Settings</h2>
+    <p class="setting-text">目前時薪固定為 <b>$200 / 小時</b>。</p>
+    <div class="teacher-lock-card">
+      <h3>雲端同步狀態</h3>
+      <p id="cloudStatusText">尚未連接雲端。若要讓老師同步查看，請先在 app.js 填入 Supabase URL 與 anon key。</p>
+      <button class="save-btn compact" id="manualSyncBtn" type="button">手動同步一次</button>
+    </div>
+    <div class="teacher-lock-card">
+      <h3>老師發薪確認密碼</h3>
+      <p>設定後，紀錄裡的「核實發薪」需要輸入這組密碼，避免誤按。</p>
+      <input id="teacherPasswordInput" type="password" autocomplete="new-password" placeholder="設定或更改老師密碼" />
+      <input id="teacherPasswordConfirm" type="password" autocomplete="new-password" placeholder="再次輸入密碼" />
+      <button class="save-btn compact" id="saveTeacherPasswordBtn" type="button">儲存老師密碼</button>
+      <button class="delete-danger light" id="clearTeacherPasswordBtn" type="button">清除密碼</button>
+      <small id="passwordStatusText">尚未設定密碼</small>
+    </div>
+  </section>
+
+  <section class="simple-panel edit-panel" id="editPanel" aria-hidden="true">
+    <button class="panel-close" type="button" data-close-panel>×</button>
+    <h2>Edit Record</h2>
+    <div class="edit-form">
+      <input type="hidden" id="editId" />
+      <label>
+        <span>日期</span>
+        <input id="editDate" type="text" placeholder="2026 / 06 / 29　星期一" />
+      </label>
+      <div class="edit-grid">
+        <label>
+          <span>開始</span>
+          <input id="editStart" type="time" />
+        </label>
+        <label>
+          <span>結束</span>
+          <input id="editEnd" type="time" />
+        </label>
+      </div>
+      <label>
+        <span>工時（小時）</span>
+        <input id="editHours" type="number" min="0" step="0.1" inputmode="decimal" />
+      </label>
+      <div class="edit-grid">
+        <label>
+          <span>午餐代扣</span>
+          <input id="editLunch" type="number" min="0" inputmode="numeric" placeholder="0" />
+        </label>
+        <label>
+          <span>代墊金額</span>
+          <input id="editReimburse" type="number" min="0" inputmode="numeric" placeholder="0" />
+        </label>
+      </div>
+      <label>
+        <span>備註</span>
+        <input id="editNote" type="text" placeholder="備註（選填）" />
+      </label>
+      <div class="edit-total">
+        <span>修改後實領</span>
+        <strong id="editFinalPay">$ 0</strong>
+      </div>
+      <button class="save-btn" id="updateRecordBtn" type="button">✓　完成修改</button>
+      <button class="delete-danger" id="deleteRecordBtn" type="button">刪除此筆紀錄</button>
+    </div>
+  </section>
+
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
