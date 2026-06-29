@@ -45,7 +45,6 @@
     </header>
 
     <main class="flex-1 flex flex-col items-center justify-center px-6 -mt-6">
-        
         <div id="mode-selector" class="bg-sand/60 p-1 rounded-full flex gap-1 mb-12 shadow-inner backdrop-blur-sm w-64 transition-opacity duration-300">
             <button id="btn-remote" onclick="switchMode('remote')" class="flex-1 py-2 text-sm rounded-full bg-white text-stone-800 shadow-sm font-medium transition-all">
                 遠端操作
@@ -57,48 +56,39 @@
 
         <div class="relative w-72 h-72 flex items-center justify-center">
             <div id="glow-bg" class="absolute inset-0 bg-white/40 pebble-shape blur-xl scale-110 transition-all duration-700"></div>
-            
             <button id="clock-btn" onclick="toggleClock()" class="absolute inset-0 bg-white hover:bg-sand/20 text-stone-700 pebble-shape shadow-md transition-all duration-500 border border-white/60 flex flex-col items-center justify-center group active:scale-95">
                 <span id="btn-en-text" class="font-serif tracking-widest text-lg text-stone-400 group-hover:text-stone-600 transition-colors">CLOCK IN</span>
                 <span id="btn-zh-text" class="text-xs tracking-widest text-stone-400 mt-2 font-light">開始工作</span>
                 <span id="timer" class="hidden font-serif text-2xl text-sage-dark mt-2 font-semibold">00:00:00</span>
             </button>
         </div>
-
     </main>
 
     <section id="settlement-card" class="fixed bottom-0 left-0 right-0 bg-white/90 border-t border-sand/60 rounded-t-[2.5rem] p-6 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] backdrop-blur-md transform translate-y-full transition-transform duration-500 ease-out flex justify-center">
         <div class="w-full max-w-md">
             <div class="w-12 h-1 bg-stone-300 rounded-full mx-auto mb-6"></div>
-            
             <h3 class="font-serif italic text-lg text-stone-800 text-center mb-6 tracking-wide">Daily Settlement</h3>
-            
             <div class="space-y-4">
                 <div class="flex justify-between items-center text-sm border-b border-stone-100 pb-3">
                     <span id="summary-hours" class="text-stone-500 font-light">今日工時 (0.0h)</span>
                     <span id="summary-base-pay" class="font-serif font-medium">$ 0</span>
                 </div>
-
                 <div id="adjustment-fields" class="space-y-3">
                     <label class="text-xs tracking-wider text-stone-400 block font-medium">薪資調整項目</label>
-                    
                     <div class="flex gap-3 items-center">
                         <span class="text-xs bg-red-50 text-red-600 px-2 py-1 rounded">扣除</span>
                         <input type="number" id="input-lunch" oninput="calculateFinalPay()" placeholder="午餐代扣金額" class="flex-1 bg-sand/30 border border-transparent focus:border-sage/40 rounded-xl px-3 py-2 text-sm outline-none transition-all">
                     </div>
-
                     <div class="flex gap-3 items-center">
                         <span class="text-xs bg-sage/10 text-sage-dark px-2 py-1 rounded">加項</span>
                         <input type="number" id="input-reimburse" oninput="calculateFinalPay()" placeholder="代墊金額" class="w-32 bg-sand/30 border border-transparent focus:border-sage/40 rounded-xl px-3 py-2 text-sm outline-none transition-all">
                         <input type="text" id="input-note" placeholder="備註 (如：代領花材)" class="flex-1 bg-sand/30 border border-transparent focus:border-sage/40 rounded-xl px-3 py-2 text-sm outline-none transition-all">
                     </div>
                 </div>
-
                 <div class="pt-4 border-t border-stone-100 flex justify-between items-baseline mt-6">
                     <span class="text-sm text-stone-800 font-medium">今日實領金額</span>
                     <span id="summary-final-pay" class="font-serif text-3xl font-semibold text-sage-dark">$ 0</span>
                 </div>
-
                 <button onclick="submitToCloud()" class="w-full bg-sage hover:bg-sage-dark text-white rounded-xl py-3.5 mt-4 shadow-sm text-sm tracking-widest font-medium transition-all active:scale-[0.99]">
                     確認並同步給老師
                 </button>
@@ -107,13 +97,11 @@
     </section>
 
     <script>
-        // --- 1. 初始化 Supabase ---
         const SUPABASE_URL = 'https://squfelhactoisdjigrjm.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdWZlbGhhY3RvaXNkamlncmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mjg4MDEsImV4cCI6MjA5ODMwNDgwMX0.DTvMySP_5hC3bUzyi38WW9Fo68-wKfp2scPmFahyuYA';
         
         let supabase = null;
 
-        // 安全初始化：確保 SDK 載入成功才建立 Client
         try {
             if (window.supabase) {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -121,10 +109,9 @@
                 document.getElementById('sync-text').innerText = "Cloud Ready";
             }
         } catch(e) {
-            console.error("Supabase 初始化失敗，開啟離線模擬模式:", e);
+            console.error("Supabase 初始化失敗:", e);
         }
 
-        // --- 2. 狀態管理 ---
         let currentMode = 'remote'; 
         let isWorking = false;
         let clockInTime = null;
@@ -132,11 +119,9 @@
         let timerInterval = null;
         const hourlyRate = 200; 
 
-        // 動態獲取當天日期並完美格式化
         const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('zh-TW', options).replace(/\//g, ' . ');
 
-        // 工作模式切換
         function switchMode(mode) {
             if (isWorking) return; 
             currentMode = mode;
@@ -152,7 +137,6 @@
             }
         }
 
-        // --- 3. 打卡邏輯 ---
         function toggleClock() {
             const clockBtn = document.getElementById('clock-btn');
             const glowBg = document.getElementById('glow-bg');
@@ -162,11 +146,9 @@
             const modeSelector = document.getElementById('mode-selector');
 
             if (!isWorking) {
-                // --- 上班打卡 ---
                 isWorking = true;
                 clockInTime = new Date();
                 
-                // 視覺調整：按鈕變鼠尾草綠
                 clockBtn.classList.remove('bg-white', 'text-stone-700');
                 clockBtn.classList.add('bg-sage', 'text-white', 'border-sage');
                 glowBg.classList.remove('bg-white/40');
@@ -190,22 +172,17 @@
                 }, 1000);
 
             } else {
-                // --- 下班打卡 ---
                 isWorking = false;
                 clockOutTime = new Date();
                 clearInterval(timerInterval);
                 
-                // 計算工時（小時，四捨五入到小數第一位）
                 const hoursWorked = ((clockOutTime - clockInTime) / (1000 * 60 * 60)).toFixed(1);
-                // 防呆：如果打卡時間太短小於 0.1 小時，最低給 0.1 小時測試用
                 const finalHours = hoursWorked > 0 ? hoursWorked : 0.1;
                 const basePay = Math.round(finalHours * hourlyRate);
 
-                // 填入結算卡片
                 document.getElementById('summary-hours').innerText = `今日工時 (${finalHours}h)`;
                 document.getElementById('summary-base-pay').innerText = `$ ${basePay}`;
                 
-                // 如果是遠端模式，隱藏加減項
                 const adjFields = document.getElementById('adjustment-fields');
                 if (currentMode === 'remote') {
                     adjFields.classList.add('hidden');
@@ -214,13 +191,10 @@
                 }
 
                 calculateFinalPay();
-
-                // 彈出結算卡片
                 document.getElementById('settlement-card').classList.remove('translate-y-full');
             }
         }
 
-        // --- 4. 薪資計算 ---
         function calculateFinalPay() {
             const basePayText = document.getElementById('summary-base-pay').innerText;
             const basePay = parseInt(basePayText.replace('$ ', '')) || 0;
@@ -229,11 +203,9 @@
             const reimburse = parseInt(document.getElementById('input-reimburse').value) || 0;
             
             const finalPay = currentMode === 'remote' ? basePay : (basePay - lunch + reimburse);
-            
             document.getElementById('summary-final-pay').innerText = `$ ${finalPay}`;
         }
 
-        // --- 5. 送出至 Supabase 雲端 ---
         async function submitToCloud() {
             if (!supabase) {
                 alert('目前處於離線狀態或雲端未正確連接，無法同步。');
