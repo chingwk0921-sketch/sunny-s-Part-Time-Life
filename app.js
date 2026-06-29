@@ -1,164 +1,135 @@
 const HOURLY_RATE = 200;
+const STORAGE_KEY = 'sunny_clockin_records_v3';
+
 const $ = (id) => document.getElementById(id);
+const state = { working:false, start:null, end:null, timer:null, elapsed:0, basePay:0, finalPay:0 };
 
-const dateText = $('dateText');
-const clockText = $('clockText');
-const clockBtn = $('clockBtn');
-const clockMainText = $('clockMainText');
-const clockSubText = $('clockSubText');
-const workTimer = $('workTimer');
-const todayState = $('todayState');
-const statusText = $('statusText');
-const shade = $('shade');
-const sheet = $('settlementSheet');
-
-let isWorking = false;
-let clockInTime = null;
-let clockOutTime = null;
-let timer = null;
-let latestSummary = null;
-
+const weekNames = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
 function pad(n){ return String(n).padStart(2,'0'); }
-function timeOnly(date){ return `${pad(date.getHours())}:${pad(date.getMinutes())}`; }
-function formatTimer(ms){
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = pad(Math.floor(total / 3600));
-  const m = pad(Math.floor((total % 3600) / 60));
-  const s = pad(total % 60);
-  return `${h}:${m}:${s}`;
-}
-function roundedHours(start, end){
-  const raw = (end - start) / 36e5;
-  return Math.max(0.1, Math.round(raw * 10) / 10);
-}
+function timeText(d){ return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function fullTimeText(d){ return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+function dateText(d){ return `${d.getFullYear()} / ${pad(d.getMonth()+1)} / ${pad(d.getDate())}　${weekNames[d.getDay()]}`; }
+function money(n){ return `$ ${Math.round(n).toLocaleString('zh-TW')}`; }
 
 function updateClock(){
   const now = new Date();
-  const week = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][now.getDay()];
-  dateText.textContent = `${now.getFullYear()} / ${pad(now.getMonth()+1)} / ${pad(now.getDate())}　${week}`;
-  clockText.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  $('dateText').textContent = dateText(now);
+  $('clockText').textContent = fullTimeText(now);
 }
-setInterval(updateClock, 1000);
-updateClock();
+
+function updateWorkTimer(){
+  const seconds = Math.max(0, Math.floor((Date.now() - state.start.getTime()) / 1000));
+  state.elapsed = seconds;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  $('workTimer').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
 
 function startWork(){
-  isWorking = true;
-  clockInTime = new Date();
-  clockBtn.classList.add('working');
-  clockMainText.textContent = 'WORKING';
-  clockSubText.textContent = '工作中';
-  statusText.textContent = 'Working';
-  todayState.textContent = `✦ ${timeOnly(clockInTime)} 已開始工作`;
-  timer = setInterval(() => {
-    workTimer.textContent = formatTimer(new Date() - clockInTime);
-  }, 1000);
+  state.working = true;
+  state.start = new Date();
+  $('clockButton').classList.add('working');
+  $('buttonEn').textContent = 'WORKING';
+  $('buttonZh').textContent = '結束工作';
+  $('statusText').textContent = 'Working';
+  $('todayNote').textContent = '✦ 工作中，記得好好呼吸';
+  updateWorkTimer();
+  state.timer = setInterval(updateWorkTimer, 1000);
 }
 
-function finishWork(){
-  isWorking = false;
-  clockOutTime = new Date();
-  clearInterval(timer);
-  const hours = roundedHours(clockInTime, clockOutTime);
-  const basePay = Math.round(hours * HOURLY_RATE);
-  latestSummary = { clockInTime, clockOutTime, hours, basePay };
+function endWork(){
+  state.working = false;
+  state.end = new Date();
+  clearInterval(state.timer);
 
-  $('periodText').textContent = `${timeOnly(clockInTime)} – ${timeOnly(clockOutTime)}`;
-  $('hoursText').textContent = `${hours} 小時`;
-  $('formulaHours').textContent = `${hours} 小時`;
-  $('basePayText').textContent = `$ ${basePay}`;
+  const rawHours = (state.end - state.start) / 3600000;
+  const hours = Math.max(0.1, Math.round(rawHours * 10) / 10);
+  state.basePay = Math.round(hours * HOURLY_RATE);
+  state.finalPay = state.basePay;
+
+  $('periodText').textContent = `${timeText(state.start)} – ${timeText(state.end)}`;
+  $('hoursText').textContent = hours.toFixed(1);
+  $('formulaHours').textContent = hours.toFixed(1);
+  $('basePayText').textContent = money(state.basePay);
   $('lunchInput').value = '';
   $('reimburseInput').value = '';
   $('noteInput').value = '';
+  $('dailyNoteInput').value = '';
   calculatePay();
-
-  clockBtn.classList.remove('working');
-  clockMainText.textContent = 'CLOCK IN';
-  clockSubText.textContent = '再次開始';
-  workTimer.textContent = '00:00:00';
-  statusText.textContent = 'Ready';
-  todayState.textContent = `✦ 今日已完成 ${hours} 小時`;
   openSheet();
-}
 
-function openSheet(){
-  shade.classList.add('show');
-  sheet.classList.add('show');
-  sheet.setAttribute('aria-hidden','false');
-}
-function closeSheet(){
-  shade.classList.remove('show');
-  sheet.classList.remove('show');
-  sheet.setAttribute('aria-hidden','true');
+  $('clockButton').classList.remove('working');
+  $('buttonEn').textContent = 'CLOCK IN';
+  $('buttonZh').textContent = '再次開始';
+  $('workTimer').textContent = '00:00:00';
+  $('statusText').textContent = 'Ready';
+  $('todayNote').textContent = '✦ 今日已完成一段工作';
 }
 
 function calculatePay(){
-  if(!latestSummary) return;
-  const lunch = parseInt($('lunchInput').value, 10) || 0;
-  const reimburse = parseInt($('reimburseInput').value, 10) || 0;
-  const finalPay = latestSummary.basePay - lunch + reimburse;
-  $('finalPayText').textContent = `$ ${finalPay}`;
+  const lunch = Number($('lunchInput').value || 0);
+  const reimburse = Number($('reimburseInput').value || 0);
+  state.finalPay = Math.max(0, state.basePay - lunch + reimburse);
+  $('finalPayText').textContent = money(state.finalPay);
 }
+
+function openSheet(){ $('overlay').classList.add('show'); $('settlementSheet').classList.add('show'); $('settlementSheet').setAttribute('aria-hidden','false'); }
+function closeAll(){
+  $('overlay').classList.remove('show');
+  $('settlementSheet').classList.remove('show');
+  $('recordsPanel').classList.remove('show');
+  $('settingsPanel').classList.remove('show');
+}
+function openPanel(id){ closeAll(); $('overlay').classList.add('show'); $(id).classList.add('show'); renderRecords(); }
 
 function getRecords(){
-  try { return JSON.parse(localStorage.getItem('sunnyClockRecords') || '[]'); }
-  catch { return []; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
 }
-function setRecords(records){ localStorage.setItem('sunnyClockRecords', JSON.stringify(records)); }
-
+function setRecords(records){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
 function saveRecord(){
-  if(!latestSummary) return;
-  const lunch = parseInt($('lunchInput').value, 10) || 0;
-  const reimburse = parseInt($('reimburseInput').value, 10) || 0;
-  const finalPay = latestSummary.basePay - lunch + reimburse;
-  const record = {
+  const records = getRecords();
+  const lunch = Number($('lunchInput').value || 0);
+  const reimburse = Number($('reimburseInput').value || 0);
+  const note = [$('noteInput').value.trim(), $('dailyNoteInput').value.trim()].filter(Boolean).join('｜');
+  records.unshift({
     id: Date.now(),
-    date: new Date().toLocaleDateString('zh-TW'),
-    clockIn: latestSummary.clockInTime.toISOString(),
-    clockOut: latestSummary.clockOutTime.toISOString(),
-    hours: latestSummary.hours,
-    basePay: latestSummary.basePay,
+    date: dateText(state.start),
+    start: timeText(state.start),
+    end: timeText(state.end),
+    hours: $('hoursText').textContent,
+    basePay: state.basePay,
     lunch,
     reimburse,
-    note: $('noteInput').value.trim(),
-    finalPay
-  };
-  const records = [record, ...getRecords()].slice(0, 30);
-  setRecords(records);
-  closeSheet();
-  alert('已儲存今日打卡紀錄');
+    note,
+    finalPay: state.finalPay
+  });
+  setRecords(records.slice(0, 60));
+  closeAll();
+  $('todayNote').textContent = '✦ 已儲存今日紀錄';
 }
-
 function renderRecords(){
-  const list = $('recordList');
+  const list = $('recordsList');
   const records = getRecords();
-  if(!records.length){
-    list.innerHTML = '<div class="empty">目前還沒有紀錄</div>';
-    return;
-  }
-  list.innerHTML = records.map(r => {
-    const start = timeOnly(new Date(r.clockIn));
-    const end = timeOnly(new Date(r.clockOut));
-    const note = r.note ? `｜${r.note}` : '';
-    return `<div class="record-item"><b><span>${r.date}</span><span>$ ${r.finalPay}</span></b><p>${start} – ${end}｜${r.hours} 小時｜午餐 -${r.lunch}｜代墊 +${r.reimburse}${note}</p></div>`;
-  }).join('');
+  if(!records.length){ list.innerHTML = '<p class="setting-text">目前還沒有打卡紀錄。</p>'; return; }
+  list.innerHTML = records.map(r => `
+    <article class="record-item">
+      <b>${r.date}</b>
+      <div>${r.start} – ${r.end}｜${r.hours} 小時｜${money(r.finalPay)}</div>
+      ${r.note ? `<small>${r.note}</small>` : ''}
+    </article>
+  `).join('');
 }
 
-clockBtn.addEventListener('click', () => isWorking ? finishWork() : startWork());
+$('clockButton').addEventListener('click', () => state.working ? endWork() : startWork());
 $('lunchInput').addEventListener('input', calculatePay);
 $('reimburseInput').addEventListener('input', calculatePay);
 $('saveBtn').addEventListener('click', saveRecord);
-shade.addEventListener('click', closeSheet);
-$('recordsBtn').addEventListener('click', () => { renderRecords(); $('recordsPanel').classList.add('show'); });
-$('closeRecordsBtn').addEventListener('click', () => $('recordsPanel').classList.remove('show'));
-$('resetBtn').addEventListener('click', () => {
-  if(isWorking && confirm('確定要取消這次打卡嗎？')){
-    clearInterval(timer);
-    isWorking = false;
-    clockBtn.classList.remove('working');
-    clockMainText.textContent = 'CLOCK IN';
-    clockSubText.textContent = '開始工作';
-    workTimer.textContent = '00:00:00';
-    statusText.textContent = 'Ready';
-    todayState.textContent = '✦ 今日尚未打卡';
-  }
-});
+$('overlay').addEventListener('click', closeAll);
+$('recordsBtn').addEventListener('click', () => openPanel('recordsPanel'));
+$('settingsBtn').addEventListener('click', () => openPanel('settingsPanel'));
+document.querySelectorAll('[data-close-panel]').forEach(btn => btn.addEventListener('click', closeAll));
+
+updateClock();
+setInterval(updateClock, 1000);
+renderRecords();
