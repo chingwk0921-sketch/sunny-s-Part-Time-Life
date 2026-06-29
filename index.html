@@ -2,101 +2,107 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Sunny's Studio Clock In</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app-shell">
+    <div id="shade" class="shade"></div>
+
     <header class="topbar">
       <div>
         <h1>Sunny's Studio</h1>
-        <p>用心工作・好好生活 <span class="leaf">𓂃𓇢</span></p>
+        <p>用心工作・好好生活 <span>⌁ ❧</span></p>
       </div>
-      <div class="status-pill" id="statusPill">
-        <span class="status-dot"></span>
-        <span id="statusText">Ready</span>
-      </div>
+      <div class="status-pill"><i></i><span id="statusText">Ready</span></div>
     </header>
 
-    <main class="hero">
-      <section class="time-card">
-        <div id="todayText" class="today">載入日期中...</div>
-        <div id="clockText" class="clock">--:--:--</div>
+    <main class="home-view">
+      <section class="time-area">
+        <div id="dateText" class="date-text">---- / -- / --</div>
+        <div id="clockText" class="clock-text">--:--:--</div>
       </section>
 
       <section class="clock-area">
-        <div class="line-art line-one"></div>
-        <div class="line-art line-two"></div>
-        <div class="botanical">⌇</div>
-        <button class="clock-button" id="clockButton" type="button">
-          <span class="sun-mark" id="sunMark">☼</span>
-          <span class="clock-en" id="clockEn">CLOCK IN</span>
-          <span class="clock-zh" id="clockZh">開始工作</span>
-          <span class="work-timer hidden" id="workTimer">00:00:00</span>
+        <div class="leaf leaf-left">❧</div>
+        <div class="soft-ring ring-a"></div>
+        <div class="soft-ring ring-b"></div>
+        <button id="clockBtn" class="clock-btn" type="button" aria-label="開始工作">
+          <span class="sun-mark">☼</span>
+          <strong id="clockMainText">CLOCK IN</strong>
+          <small id="clockSubText">開始工作</small>
+          <em id="workTimer">00:00:00</em>
         </button>
       </section>
 
-      <p class="hint" id="hintText">✦ 今日尚未打卡</p>
+      <p id="todayState" class="today-state">✦ 今日尚未打卡</p>
     </main>
 
-    <section class="settlement-panel" id="settlementPanel" aria-hidden="true">
-      <div class="drag-bar"></div>
-      <h2>Daily Settlement</h2>
+    <nav class="bottom-nav">
+      <button class="active" type="button"><span>◷</span>打卡</button>
+      <button id="recordsBtn" type="button"><span>□</span>紀錄</button>
+      <button id="resetBtn" type="button"><span>♡</span>重置</button>
+    </nav>
 
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span class="icon">◷</span>
-          <div>
-            <p>今日工時</p>
-            <strong id="totalHours">0.0 小時</strong>
-          </div>
+    <section id="settlementSheet" class="settlement-sheet" aria-hidden="true">
+      <div class="sheet-handle"></div>
+      <h2>Daily Settlement</h2>
+      <div class="tiny-leaf">⌁ ❧ ⌁</div>
+
+      <div class="work-period card-soft">
+        <div class="circle-icon">◷</div>
+        <div>
+          <span>工作期間</span>
+          <strong id="periodText">--:-- – --:--</strong>
         </div>
-        <div class="summary-item">
-          <span class="icon">$</span>
-          <div>
-            <p>時薪</p>
-            <strong>$ 200 / 小時</strong>
-          </div>
-        </div>
-        <div class="summary-item">
-          <span class="icon">▣</span>
-          <div>
-            <p>基本薪資</p>
-            <strong id="basePay">$ 0</strong>
-          </div>
-        </div>
+        <b id="hoursText">0 小時</b>
+      </div>
+
+      <div class="formula-card">
+        <div><span>時薪</span><b>$ 200</b></div>
+        <i>×</i>
+        <div><span>工時</span><b id="formulaHours">0 小時</b></div>
+        <i>=</i>
+        <div><span>基本薪資</span><b id="basePayText">$ 0</b></div>
       </div>
 
       <div class="adjust-card">
         <h3>薪資調整項目</h3>
-        <label class="field-row minus">
-          <span>− 午餐代扣金額</span>
-          <input id="lunchInput" type="number" min="0" inputmode="numeric" placeholder="$ 0" />
+        <label>
+          <span class="minus">−</span>
+          <p>午餐代扣金額</p>
+          <input id="lunchInput" type="number" inputmode="numeric" placeholder="$ 0" />
         </label>
-        <label class="field-row plus">
-          <span>＋ 代墊金額</span>
-          <input id="reimburseInput" type="number" min="0" inputmode="numeric" placeholder="$ 0" />
+        <label>
+          <span class="plus">＋</span>
+          <p>代墊金額</p>
+          <input id="reimburseInput" type="number" inputmode="numeric" placeholder="$ 0" />
         </label>
-        <label class="note-field">
-          <span>備註</span>
-          <input id="noteInput" type="text" placeholder="例如：代領花材、材料費..." />
+        <label class="note-row">
+          <span>□</span>
+          <input id="noteInput" type="text" placeholder="備註（選填）" />
         </label>
       </div>
 
-      <div class="final-row">
+      <div class="final-card">
         <span>今日實領金額</span>
-        <strong id="finalPay">$ 0</strong>
+        <strong id="finalPayText">$ 0</strong>
       </div>
 
-      <div class="action-row">
-        <button class="ghost-btn" id="resetBtn" type="button">重新打卡</button>
-        <button class="send-btn" id="saveBtn" type="button">儲存今日紀錄</button>
+      <button id="saveBtn" class="save-btn" type="button">✓ 完成，儲存紀錄</button>
+      <p class="save-hint">打卡紀錄將自動保存於本機</p>
+    </section>
+
+    <section id="recordsPanel" class="records-panel" aria-hidden="true">
+      <div class="panel-card">
+        <button id="closeRecordsBtn" type="button">×</button>
+        <h2>近期紀錄</h2>
+        <div id="recordList" class="record-list"></div>
       </div>
-      <p class="small-note" id="saveNote">目前會先儲存在這台裝置，之後可再接 Supabase 雲端同步。</p>
     </section>
   </div>
 
