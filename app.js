@@ -1,7 +1,7 @@
 // Sunny Studio Clock 1.0
 // 若要啟用 Supabase：填入下方兩欄，並建立 clock_in_records 資料表。
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
+const SUPABASE_URL = 'https://squfelhactoisdjigrjm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdWZlbGhhY3RvaXNkamlncmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mjg4MDEsImV4cCI6MjA5ODMwNDgwMX0.DTvMySP_5hC3bUzyi38WW9Fo68-wKfp2scPmFahyuYA';
 const HOURLY_RATE = 200;
 const STORAGE_KEY = 'sunny_studio_clock_records_v1';
 const WORKING_KEY = 'sunny_studio_clock_working_v1';
