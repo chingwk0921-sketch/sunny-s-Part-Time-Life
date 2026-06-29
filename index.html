@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sunny's Work Clock-In</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght=0,400;0,600;1,400&family=Noto+Sans+TC:wght=300;400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -36,7 +36,7 @@
     <header class="p-6 flex justify-between items-center">
         <div>
             <h1 class="font-serif italic text-2xl tracking-wide text-stone-800">Sunny's Studio</h1>
-            <p id="current-date" class="text-xs text-stone-400 mt-1">2026 . 06 . 29</p>
+            <p id="current-date" class="text-xs text-stone-400 mt-1">載入中...</p>
         </div>
         <div class="flex items-center gap-2 bg-white/60 px-3 py-1.5 rounded-full shadow-sm backdrop-blur-sm">
             <span id="sync-dot" class="w-2 h-2 rounded-full bg-stone-300"></span>
@@ -110,29 +110,35 @@
         // --- 1. 初始化 Supabase ---
         const SUPABASE_URL = 'https://squfelhactoisdjigrjm.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdWZlbGhhY3RvaXNkamlncmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mjg4MDEsImV4cCI6MjA5ODMwNDgwMX0.DTvMySP_5hC3bUzyi38WW9Fo68-wKfp2scPmFahyuYA';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let supabase = null;
 
-        // 檢查連線狀態
-        if(supabase) {
-            document.getElementById('sync-dot').className = "w-2 h-2 rounded-full bg-sage animate-pulse";
-            document.getElementById('sync-text').innerText = "Cloud Ready";
+        // 安全初始化：確保 SDK 載入成功才建立 Client
+        try {
+            if (window.supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                document.getElementById('sync-dot').className = "w-2 h-2 rounded-full bg-sage animate-pulse";
+                document.getElementById('sync-text').innerText = "Cloud Ready";
+            }
+        } catch(e) {
+            console.error("Supabase 初始化失敗，開啟離線模擬模式:", e);
         }
 
         // --- 2. 狀態管理 ---
-        let currentMode = 'remote'; // 'remote' 或 'studio'
+        let currentMode = 'remote'; 
         let isWorking = false;
         let clockInTime = null;
         let clockOutTime = null;
         let timerInterval = null;
-        const hourlyRate = 200; // 預設時薪，可自行修改
+        const hourlyRate = 200; 
 
-        // 顯示今天日期
+        // 動態獲取當天日期並完美格式化
         const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('zh-TW', options).replace(/\//g, ' . ');
 
         // 工作模式切換
         function switchMode(mode) {
-            if (isWorking) return; // 工作中不能切換模式
+            if (isWorking) return; 
             currentMode = mode;
             const btnRemote = document.getElementById('btn-remote');
             const btnStudio = document.getElementById('btn-studio');
@@ -171,7 +177,6 @@
                 zhText.innerText = '撥雲工作中';
                 zhText.className = 'text-xs tracking-widest text-white/90 mt-1 font-light';
                 
-                // 隱藏模式切換，啟動計時器
                 modeSelector.classList.add('opacity-30', 'pointer-events-none');
                 timerDisplay.classList.remove('hidden');
                 
@@ -192,10 +197,12 @@
                 
                 // 計算工時（小時，四捨五入到小數第一位）
                 const hoursWorked = ((clockOutTime - clockInTime) / (1000 * 60 * 60)).toFixed(1);
-                const basePay = Math.round(hoursWorked * hourlyRate);
+                // 防呆：如果打卡時間太短小於 0.1 小時，最低給 0.1 小時測試用
+                const finalHours = hoursWorked > 0 ? hoursWorked : 0.1;
+                const basePay = Math.round(finalHours * hourlyRate);
 
                 // 填入結算卡片
-                document.getElementById('summary-hours').innerText = `今日工時 (${hoursWorked}h)`;
+                document.getElementById('summary-hours').innerText = `今日工時 (${finalHours}h)`;
                 document.getElementById('summary-base-pay').innerText = `$ ${basePay}`;
                 
                 // 如果是遠端模式，隱藏加減項
@@ -221,7 +228,6 @@
             const lunch = parseInt(document.getElementById('input-lunch').value) || 0;
             const reimburse = parseInt(document.getElementById('input-reimburse').value) || 0;
             
-            // 遠端不計算加減項
             const finalPay = currentMode === 'remote' ? basePay : (basePay - lunch + reimburse);
             
             document.getElementById('summary-final-pay').innerText = `$ ${finalPay}`;
@@ -229,6 +235,11 @@
 
         // --- 5. 送出至 Supabase 雲端 ---
         async function submitToCloud() {
+            if (!supabase) {
+                alert('目前處於離線狀態或雲端未正確連接，無法同步。');
+                return;
+            }
+
             const hoursWorked = parseFloat(document.getElementById('summary-hours').innerText.match(/\((.*?)h\)/)[1]);
             const basePay = parseInt(document.getElementById('summary-base-pay').innerText.replace('$ ', ''));
             const lunch = parseInt(document.getElementById('input-lunch').value) || 0;
@@ -256,11 +267,10 @@
                 if (error) throw error;
 
                 alert('🎉 資料已成功同步至雲端！');
-                // 重置頁面狀態
                 location.reload();
             } catch (error) {
                 console.error('同步失敗:', error.message);
-                alert('同步失敗，請檢查 Supabase 設定！');
+                alert('同步失敗，請確認妳在 Supabase 裡有成功建立名叫「clock_in_records」的 Table 唷！');
             }
         }
     </script>
